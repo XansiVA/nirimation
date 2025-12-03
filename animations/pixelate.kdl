@@ -1,10 +1,8 @@
 animations {
-
   workspace-switch {
     duration-ms 300
     curve "ease-out-cubic"
   }
-
   window-open {
     duration-ms 400
     curve "linear"
@@ -14,15 +12,12 @@ animations {
           if (coords_geo.x < 0.0 || coords_geo.x > 1.0 || coords_geo.y < 0.0 || coords_geo.y > 1.0) {
               return vec4(0.0);
           }
-
           float progress = niri_clamped_progress;
           float border_width = 0.008; // Adjust based on your border size
           vec2 coords = coords_geo.xy;
-
           // Check if we're in the border region
           bool in_border = coords.x < border_width || coords.x > (1.0 - border_width) ||
                           coords.y < border_width || coords.y > (1.0 - border_width);
-
           // Only pixelate the inner content, not the border
           if (!in_border) {
               float pixel_size = (1.0 - progress) * 0.1;
@@ -32,7 +27,6 @@ animations {
               // Clamp sampling to avoid border area
               coords = clamp(coords, border_width, 1.0 - border_width);
           }
-
           vec3 new_coords = vec3(coords, 1.0);
           vec3 coords_tex = niri_geo_to_tex * new_coords;
           vec4 color = texture2D(niri_tex, coords_tex.st);
@@ -44,48 +38,39 @@ animations {
       }
     "
   }
-
   window-close {
     duration-ms 400
     curve "linear"
     custom-shader r"
-      vec4 shrink_pixelate_close(vec3 coords_geo, vec3 size_geo) {
+      vec4 pixelate_close(vec3 coords_geo, vec3 size_geo) {
+          // Discard pixels outside window bounds
           if (coords_geo.x < 0.0 || coords_geo.x > 1.0 || coords_geo.y < 0.0 || coords_geo.y > 1.0) {
               return vec4(0.0);
           }
-          
           float progress = niri_clamped_progress;
           float border_width = 0.008;
-          
-          // Shrink towards center
-          float scale = 1.0 - progress;
-          vec2 coords = (coords_geo.xy - 0.5) / max(scale, 0.01) + 0.5;
-          
-          // Check bounds after scaling
-          if (coords.x < 0.0 || coords.x > 1.0 || coords.y < 0.0 || coords.y > 1.0) {
-              return vec4(0.0);
-          }
-          
+          vec2 coords = coords_geo.xy;
+          // Check if we're in the border region
           bool in_border = coords.x < border_width || coords.x > (1.0 - border_width) ||
                           coords.y < border_width || coords.y > (1.0 - border_width);
-          
+          // Only pixelate the inner content, not the border
           if (!in_border) {
-              float pixel_size = progress * 0.08;
+              float pixel_size = progress * 0.1;
               if (pixel_size > 0.0) {
                   coords = floor(coords / pixel_size) * pixel_size + pixel_size * 0.5;
               }
+              // Clamp sampling to avoid border area
               coords = clamp(coords, border_width, 1.0 - border_width);
           }
-          
-          vec3 coords_tex = niri_geo_to_tex * vec3(coords, 1.0);
+          vec3 new_coords = vec3(coords, 1.0);
+          vec3 coords_tex = niri_geo_to_tex * new_coords;
           vec4 color = texture2D(niri_tex, coords_tex.st);
           color.a *= (1.0 - progress);
           return color;
       }
       vec4 close_color(vec3 coords_geo, vec3 size_geo) {
-        return shrink_pixelate_close(coords_geo, size_geo);
+        return pixelate_close(coords_geo, size_geo);
       }
     "
   }
-
 }
