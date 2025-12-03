@@ -46,5 +46,6 @@ window-open {
         }
         vec4 close_color(vec3 coords_geo, vec3 size_geo) {
             return fall_and_rotate(coords_geo, size_geo);
-        }"
+            "
+        }
     }
