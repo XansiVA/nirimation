@@ -24,8 +24,8 @@ Enjoy them!
 Here are the other videos for refrence
 
 
-
-
+<details>
+          <summary>drop down</summary>
 https://github.com/user-attachments/assets/db6a82f1-80d8-4be0-8f09-70b281217c69
 
 
@@ -51,3 +51,4 @@ https://github.com/user-attachments/assets/4ad228f2-ed69-40dc-8ab3-287480fa4427
 
 https://github.com/user-attachments/assets/a62bb9d3-9fe3-4a35-9c87-d9af3f45c999
 
+</details>
