@@ -21,3 +21,33 @@ We only add FULL animation blocks so delete you're current animation block in th
 You are allowed to ask for a animation, contribute, and download any of them all you like
 Enjoy them!
 
+Here are the other videos for refrence
+
+
+
+
+https://github.com/user-attachments/assets/db6a82f1-80d8-4be0-8f09-70b281217c69
+
+
+
+https://github.com/user-attachments/assets/8f082806-9294-41f9-af31-aeacfb225309
+
+
+
+https://github.com/user-attachments/assets/031df995-b502-457f-92fd-7c359d825a24
+
+
+https://github.com/user-attachments/assets/a6490c92-9e5f-4641-8585-da515c9d213e
+
+
+
+https://github.com/user-attachments/assets/bdac322f-a53c-4e02-9107-a76124b935f5
+
+
+
+https://github.com/user-attachments/assets/4ad228f2-ed69-40dc-8ab3-287480fa4427
+
+
+
+https://github.com/user-attachments/assets/a62bb9d3-9fe3-4a35-9c87-d9af3f45c999
+
