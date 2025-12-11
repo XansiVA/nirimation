@@ -25,7 +25,12 @@ Here are the other videos for refrence
 
 
 <details>
-          <summary>drop down</summary>
+          <summary>Other Videos of Configurations</summary>
+
+          
+          
+          
+          
 https://github.com/user-attachments/assets/db6a82f1-80d8-4be0-8f09-70b281217c69
 
 
