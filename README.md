@@ -21,6 +21,9 @@ We only add FULL animation blocks so delete you're current animation block in th
 You are allowed to ask for a animation, contribute, and download any of them all you like
 Enjoy them!
 
+
+# Current Issues;
+Unravel Seems to have a error or non alignment where it does not draw the line based on how long the window is infact it just draws it to the screen width.
 Here are the other videos for refrence
 
 
@@ -38,8 +41,6 @@ https://github.com/user-attachments/assets/db6a82f1-80d8-4be0-8f09-70b281217c69
 https://github.com/user-attachments/assets/8f082806-9294-41f9-af31-aeacfb225309
 
 
-
-https://github.com/user-attachments/assets/031df995-b502-457f-92fd-7c359d825a24
 
 
 https://github.com/user-attachments/assets/a6490c92-9e5f-4641-8585-da515c9d213e
