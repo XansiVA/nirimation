@@ -8,7 +8,7 @@ https://github.com/user-attachments/assets/ab2b63ec-8040-456a-aa48-38993233b255
 
 <details>
   <summary>Other configs</summary>
-[Unravel](https://github.com/user-attachments/assets/be51a444-1535-437a-b801-db6317646fa7)
+![Unravel](https://github.com/user-attachments/assets/be51a444-1535-437a-b801-db6317646fa7)
 
 </details>
 
