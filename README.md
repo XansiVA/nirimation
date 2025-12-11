@@ -1,6 +1,11 @@
 # Nirimation
 A host for Niri Animations configurations to be shared using custom shaders built in with GLSL
 
+# Showcase
+## This was brought by Posty!
+
+https://github.com/user-attachments/assets/ab2b63ec-8040-456a-aa48-38993233b255
+
 > **Notice**
 > We don't take animation configs that are not **Custom Shaders!**
 This means that they must be written in GLSL or any other graphics programming.
