@@ -1,0 +1,65 @@
+animations {
+    workspace-switch {
+        spring damping-ratio=0.9 stiffness=800 epsilon=0.0001
+    }
+
+    horizontal-view-movement {
+        spring damping-ratio=0.9 stiffness=800 epsilon=0.0001
+    }
+
+    window-open {
+        duration-ms 200
+        curve "linear"
+
+        custom-shader r"
+          vec4 open_color(vec3 coords_geo, vec3 size_geo) {
+            float p0 = niri_clamped_progress;
+            float p  = smoothstep(0.0, 1.0, p0);
+
+            vec2 size   = size_geo.xy;
+            vec2 center = size * 0.5;
+            vec2 pos    = coords_geo.xy * size;
+
+            float scale = mix(0.01, 1.0, p);
+
+            vec2 scaled_pos = (pos - center) / scale + center;
+            vec2 uv = scaled_pos / size;
+
+            if (uv.x < 0.0 || uv.x > 1.0 ||
+                uv.y < 0.0 || uv.y > 1.0) {
+                return vec4(0.0, 0.0, 0.0, 0.0);
+            }
+
+            return texture2D(niri_tex, uv);
+          }
+        "
+    }
+
+    window-close {
+        duration-ms 300
+        curve "linear"
+
+        custom-shader r"
+          vec4 close_color(vec3 coords_geo, vec3 size_geo) {
+            float p0 = niri_clamped_progress;
+            float p  = smoothstep(0.0, 1.0, p0);
+
+            vec2 size   = size_geo.xy;
+            vec2 center = size * 0.5;
+            vec2 pos    = coords_geo.xy * size;
+
+            float scale = mix(1.0, 0.01, p);
+
+            vec2 scaled_pos = (pos - center) / scale + center;
+            vec2 uv = scaled_pos / size;
+
+            if (uv.x < 0.0 || uv.x > 1.0 ||
+                uv.y < 0.0 || uv.y > 1.0) {
+                return vec4(0.0, 0.0, 0.0, 0.0);
+            }
+
+            return texture2D(niri_tex, uv);
+          }
+        "
+    }
+}
