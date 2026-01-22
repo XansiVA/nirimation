@@ -1,0 +1,99 @@
+// Traditional burn appearance, orange glowy look
+animations {
+    workspace-switch {
+        duration-ms 300
+        curve "ease-out-cubic"
+    }
+
+    window-open {
+        duration-ms 500
+        curve "linear"
+        custom-shader r"
+            float hash(vec2 p) {
+                return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+            }
+            float noise(vec2 p) {
+                vec2 i = floor(p);
+                vec2 f = fract(p);
+                f = f * f * (3.0 - 2.0 * f);
+                return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x),
+                           mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
+            }
+            vec4 burn_open(vec3 coords_geo, vec3 size_geo) {
+                if (coords_geo.x < 0.0 || coords_geo.x > 1.0 || coords_geo.y < 0.0 || coords_geo.y > 1.0) {
+                    return vec4(0.0);
+                }
+                float progress = niri_clamped_progress;
+                vec2 uv = coords_geo.xy;
+                vec3 coords_tex = niri_geo_to_tex * vec3(uv, 1.0);
+                vec4 color = texture2D(niri_tex, coords_tex.st);
+
+                float edge_dist = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
+                float n = noise(uv * 8.0 + niri_random_seed * 100.0) * 0.3;
+                float burn_line = edge_dist + n;
+                float threshold = progress * 0.8;
+
+                vec3 ember_inner = vec3(1.0, 0.3, 0.0);
+                vec3 ember_outer = vec3(1.0, 0.8, 0.2);
+
+                if (burn_line < threshold - 0.08) {
+                    return color;
+                } else if (burn_line < threshold) {
+                    vec3 ember = mix(ember_inner, ember_outer, (burn_line - threshold + 0.08) / 0.08);
+                    return vec4(mix(ember, color.rgb, 0.3), color.a);
+                } else {
+                    return vec4(0.0);
+                }
+            }
+            vec4 open_color(vec3 coords_geo, vec3 size_geo) {
+                return burn_open(coords_geo, size_geo);
+            }
+        "
+    }
+
+    window-close {
+        duration-ms 500
+        curve "linear"
+        custom-shader r"
+            float hash(vec2 p) {
+                return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+            }
+            float noise(vec2 p) {
+                vec2 i = floor(p);
+                vec2 f = fract(p);
+                f = f * f * (3.0 - 2.0 * f);
+                return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x),
+                           mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
+            }
+            vec4 burn_close(vec3 coords_geo, vec3 size_geo) {
+                if (coords_geo.x < 0.0 || coords_geo.x > 1.0 || coords_geo.y < 0.0 || coords_geo.y > 1.0) {
+                    return vec4(0.0);
+                }
+                float progress = niri_clamped_progress;
+                vec2 uv = coords_geo.xy;
+                vec3 coords_tex = niri_geo_to_tex * vec3(uv, 1.0);
+                vec4 color = texture2D(niri_tex, coords_tex.st);
+
+                float edge_dist = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
+                float n = noise(uv * 8.0 + niri_random_seed * 100.0) * 0.3;
+                float burn_line = edge_dist + n;
+                float threshold = progress * 0.8;
+
+                vec3 ember_inner = vec3(1.0, 0.3, 0.0);
+                vec3 ember_outer = vec3(1.0, 0.8, 0.2);
+
+                if (burn_line > threshold + 0.08) {
+                    return color;
+                } else if (burn_line > threshold) {
+                    vec3 ember = mix(ember_inner, ember_outer, 1.0 - (burn_line - threshold) / 0.08);
+                    return vec4(mix(ember, color.rgb, 0.3), color.a);
+                } else {
+                    return vec4(0.0);
+                }
+            }
+            vec4 close_color(vec3 coords_geo, vec3 size_geo) {
+                return burn_close(coords_geo, size_geo);
+            }
+        "
+    }
+}
