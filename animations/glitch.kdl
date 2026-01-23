@@ -1,0 +1,68 @@
+// Glitch Effect - Chromatic aberration with CRT scanlines
+// Windows open/close with RGB channel splitting and scanline overlay
+//
+// Adjustable parameters:
+// - split (0.04): RGB split intensity - higher = more separation
+// - scanline (0.08): Scanline visibility - higher = more prominent
+// - uv.y * 400.0: Scanline density - higher = more lines
+
+animations {
+    window-open {
+        duration-ms 400
+        curve "linear"
+        custom-shader r"
+            vec4 open_color(vec3 coords_geo, vec3 size_geo) {
+                if (coords_geo.x < 0.0 || coords_geo.x > 1.0 || coords_geo.y < 0.0 || coords_geo.y > 1.0) return vec4(0.0);
+                float progress = niri_clamped_progress;
+                float glitch = 1.0 - progress;
+                vec2 uv = coords_geo.xy;
+
+                // RGB channel splitting - channels converge as window opens
+                float split = glitch * 0.04;
+                vec3 cr = niri_geo_to_tex * vec3(uv + vec2(split, 0.0), 1.0);
+                vec3 cg = niri_geo_to_tex * vec3(uv, 1.0);
+                vec3 cb = niri_geo_to_tex * vec3(uv - vec2(split, 0.0), 1.0);
+
+                float r = texture2D(niri_tex, cr.st).r;
+                float g = texture2D(niri_tex, cg.st).g;
+                float b = texture2D(niri_tex, cb.st).b;
+                float a = texture2D(niri_tex, cg.st).a;
+                vec3 color = vec3(r, g, b);
+
+                // CRT scanline effect
+                float scanline = 1.0 - 0.08 + 0.08 * sin(uv.y * 400.0);
+
+                return vec4(color * scanline, a * progress);
+            }
+        "
+    }
+
+    window-close {
+        duration-ms 600
+        curve "linear"
+        custom-shader r"
+            vec4 close_color(vec3 coords_geo, vec3 size_geo) {
+                if (coords_geo.x < 0.0 || coords_geo.x > 1.0 || coords_geo.y < 0.0 || coords_geo.y > 1.0) return vec4(0.0);
+                float progress = niri_clamped_progress;
+                vec2 uv = coords_geo.xy;
+
+                // RGB channel splitting - channels separate as window closes
+                float split = progress * 0.04;
+                vec3 cr = niri_geo_to_tex * vec3(uv + vec2(split, 0.0), 1.0);
+                vec3 cg = niri_geo_to_tex * vec3(uv, 1.0);
+                vec3 cb = niri_geo_to_tex * vec3(uv - vec2(split, 0.0), 1.0);
+
+                float r = texture2D(niri_tex, cr.st).r;
+                float g = texture2D(niri_tex, cg.st).g;
+                float b = texture2D(niri_tex, cb.st).b;
+                float a = texture2D(niri_tex, cg.st).a;
+                vec3 color = vec3(r, g, b);
+
+                // CRT scanline effect
+                float scanline = 1.0 - 0.08 + 0.08 * sin(uv.y * 400.0);
+
+                return vec4(color * scanline, a * (1.0 - progress));
+            }
+        "
+    }
+}

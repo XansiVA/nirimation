@@ -1,0 +1,133 @@
+// Burn Effect with Ashes - Windows burn with 8 random ember colors, floating ash, and glowing sparks
+//
+// Adjustable parameters:
+// - uv * 8.0: Edge roughness - higher = finer burn pattern
+// - threshold * 0.8: Burn reach - how far burn extends into window
+// - 0.08: Glow width - width of ember glow line
+// - 150.0 in ash_particle: Ash size - higher = smaller particles
+// - 280.0 in ember_spark: Spark size - higher = smaller sparks
+// - Loop counts (7.0, 8.0): Particle layers - more = more particles (performance impact)
+
+animations {
+    window-open {
+        duration-ms 400
+        curve "linear"
+        custom-shader r"
+            float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+            float noise(vec2 p) {
+                vec2 i = floor(p); vec2 f = fract(p);
+                f = f * f * (3.0 - 2.0 * f);
+                return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x),
+                           mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
+            }
+            vec3 get_ember_colors(float seed, out vec3 inner, out vec3 outer) {
+                if (seed < 0.125) { inner = vec3(1.0, 0.3, 0.0); outer = vec3(1.0, 0.8, 0.2); }       // orange
+                else if (seed < 0.250) { inner = vec3(0.2, 0.4, 1.0); outer = vec3(0.5, 0.8, 1.0); } // blue
+                else if (seed < 0.375) { inner = vec3(0.6, 0.1, 0.9); outer = vec3(0.9, 0.5, 1.0); } // purple
+                else if (seed < 0.500) { inner = vec3(0.1, 0.8, 0.2); outer = vec3(0.5, 1.0, 0.3); } // green
+                else if (seed < 0.625) { inner = vec3(1.0, 0.1, 0.4); outer = vec3(1.0, 0.5, 0.7); } // pink
+                else if (seed < 0.750) { inner = vec3(0.0, 0.8, 0.9); outer = vec3(0.7, 1.0, 1.0); } // cyan
+                else if (seed < 0.875) { inner = vec3(0.9, 0.7, 0.1); outer = vec3(1.0, 1.0, 0.8); } // gold
+                else { inner = vec3(0.8, 0.2, 0.1); outer = vec3(1.0, 0.5, 0.2); }                   // red
+                return inner;
+            }
+            vec4 open_color(vec3 coords_geo, vec3 size_geo) {
+                if (coords_geo.x < 0.0 || coords_geo.x > 1.0 || coords_geo.y < 0.0 || coords_geo.y > 1.0) return vec4(0.0);
+                float progress = niri_clamped_progress;
+                vec2 uv = coords_geo.xy;
+                vec3 coords_tex = niri_geo_to_tex * vec3(uv, 1.0);
+                vec4 color = texture2D(niri_tex, coords_tex.st);
+                float edge_dist = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
+                float n = noise(uv * 8.0 + niri_random_seed * 100.0) * 0.3;
+                float burn_line = edge_dist + n;
+                float threshold = progress * 0.8;
+                vec3 ember_inner, ember_outer;
+                get_ember_colors(niri_random_seed, ember_inner, ember_outer);
+                if (burn_line < threshold - 0.08) return color;
+                else if (burn_line < threshold) {
+                    vec3 ember = mix(ember_inner, ember_outer, (burn_line - threshold + 0.08) / 0.08);
+                    return vec4(mix(ember, color.rgb, 0.3), color.a);
+                } else return vec4(0.0);
+            }
+        "
+    }
+
+    window-close {
+        duration-ms 600
+        curve "linear"
+        custom-shader r"
+            float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+            float noise(vec2 p) {
+                vec2 i = floor(p); vec2 f = fract(p);
+                f = f * f * (3.0 - 2.0 * f);
+                return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x),
+                           mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
+            }
+            vec3 get_ember_colors(float seed, out vec3 inner, out vec3 outer) {
+                if (seed < 0.125) { inner = vec3(1.0, 0.3, 0.0); outer = vec3(1.0, 0.8, 0.2); }
+                else if (seed < 0.250) { inner = vec3(0.2, 0.4, 1.0); outer = vec3(0.5, 0.8, 1.0); }
+                else if (seed < 0.375) { inner = vec3(0.6, 0.1, 0.9); outer = vec3(0.9, 0.5, 1.0); }
+                else if (seed < 0.500) { inner = vec3(0.1, 0.8, 0.2); outer = vec3(0.5, 1.0, 0.3); }
+                else if (seed < 0.625) { inner = vec3(1.0, 0.1, 0.4); outer = vec3(1.0, 0.5, 0.7); }
+                else if (seed < 0.750) { inner = vec3(0.0, 0.8, 0.9); outer = vec3(0.7, 1.0, 1.0); }
+                else if (seed < 0.875) { inner = vec3(0.9, 0.7, 0.1); outer = vec3(1.0, 1.0, 0.8); }
+                else { inner = vec3(0.8, 0.2, 0.1); outer = vec3(1.0, 0.5, 0.2); }
+                return inner;
+            }
+            float ash_particle(vec2 uv, float seed) {
+                float pn = noise(uv * 150.0 + seed * 50.0);
+                return pn < 0.78 ? 0.0 : (pn - 0.78) / 0.22;
+            }
+            float ember_spark(vec2 uv, float seed) {
+                float sn = hash(floor(uv * 280.0) + seed * 100.0);
+                return sn < 0.982 ? 0.0 : pow((sn - 0.982) / 0.018, 2.0);
+            }
+            vec4 close_color(vec3 coords_geo, vec3 size_geo) {
+                float progress = niri_clamped_progress;
+                vec2 uv = coords_geo.xy;
+                vec3 ember_inner, ember_outer;
+                get_ember_colors(niri_random_seed, ember_inner, ember_outer);
+                vec4 particles = vec4(0.0);
+                for (float i = 0.0; i < 7.0; i++) {
+                    float ls = niri_random_seed + i * 0.1;
+                    vec2 auv = uv; auv.y += progress * (0.25 + i * 0.12);
+                    auv.x += progress * (noise(vec2(i, ls) * 10.0) - 0.5) * 0.4 + sin(progress * 6.28 + i * 1.5) * 0.03;
+                    float ed = min(min(auv.x, 1.0 - auv.x), min(auv.y, 1.0 - auv.y));
+                    float sz = progress * 0.75;
+                    if (ed < sz && ed > 0.0) {
+                        float p = ash_particle(auv, ls);
+                        float fade = (1.0 - smoothstep(0.0, sz, ed)) * (1.0 - progress * 0.4);
+                        particles.rgb += mix(ember_outer * 0.5, vec3(0.3), 0.4 + i * 0.1) * p * fade * 0.7;
+                        particles.a += p * fade * 0.5;
+                    }
+                }
+                for (float j = 0.0; j < 8.0; j++) {
+                    float ss = niri_random_seed + j * 0.17 + 0.5;
+                    vec2 suv = uv; suv.y += progress * (0.4 + j * 0.1);
+                    suv.x += progress * (hash(vec2(j, ss)) - 0.5) * 0.5 + sin(progress * 10.0 + j * 2.0) * 0.025;
+                    float ed = min(min(suv.x, 1.0 - suv.x), min(suv.y, 1.0 - suv.y));
+                    float sz = progress * 0.7;
+                    if (ed < sz && ed > 0.0) {
+                        float sp = ember_spark(suv, ss);
+                        float fade = (1.0 - smoothstep(0.0, sz * 0.8, ed)) * (1.0 - progress * 0.6);
+                        float flicker = 0.7 + 0.3 * sin(progress * 20.0 + j * 3.0);
+                        particles.rgb += ember_inner * sp * fade * flicker * 1.5;
+                        particles.a += sp * fade * 0.8;
+                    }
+                }
+                if (coords_geo.x < 0.0 || coords_geo.x > 1.0 || coords_geo.y < 0.0 || coords_geo.y > 1.0) return particles;
+                vec3 coords_tex = niri_geo_to_tex * vec3(uv, 1.0);
+                vec4 color = texture2D(niri_tex, coords_tex.st);
+                float edge_dist = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
+                float n = noise(uv * 8.0 + niri_random_seed * 100.0) * 0.3;
+                float burn_line = edge_dist + n;
+                float threshold = progress * 0.8;
+                if (burn_line > threshold + 0.08) return color + particles;
+                else if (burn_line > threshold) {
+                    vec3 ember = mix(ember_inner, ember_outer, 1.0 - (burn_line - threshold) / 0.08);
+                    return vec4(mix(ember, color.rgb, 0.3), color.a) + particles;
+                } else return particles;
+            }
+        "
+    }
+}
