@@ -3,7 +3,7 @@ animations {
         spring damping-ratio=0.80 stiffness=523 epsilon=0.0001
     }
 window-open {
-        duration-ms 1000
+        duration-ms 500
         curve "ease-out-expo"
         custom-shader "vec4 fall_from_top(vec3 coords_geo, vec3 size_geo) {
             float progress = niri_clamped_progress * niri_clamped_progress;
@@ -23,7 +23,7 @@ window-open {
     }
 
     window-close {
-        duration-ms 1000
+        duration-ms 500
         curve "linear"
         custom-shader "vec4 fall_to_bottom(vec3 coords_geo, vec3 size_geo) {
             float progress = niri_clamped_progress * niri_clamped_progress;
