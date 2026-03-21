@@ -1,0 +1,171 @@
+// explodes in varied patterns. Screen has a light orange flash for
+// *dramatic effect* - inspired by C&C Red Alert
+
+animations {
+    window-open {
+        duration-ms 550
+        curve "linear"
+        custom-shader r"
+            float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+            float noise(vec2 p) {
+                vec2 i = floor(p); vec2 f = fract(p);
+                f = f * f * (3.0 - 2.0 * f);
+                return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x),
+                           mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
+            }
+            float fbm(vec2 p) {
+                float f = 0.0;
+                f += 0.5 * noise(p); p *= 2.1;
+                f += 0.25 * noise(p); p *= 2.2;
+                f += 0.125 * noise(p); p *= 2.3;
+                f += 0.0625 * noise(p);
+                return f;
+            }
+            vec4 open_color(vec3 coords_geo, vec3 size_geo) {
+                if (coords_geo.x < 0.0 || coords_geo.x > 1.0 || coords_geo.y < 0.0 || coords_geo.y > 1.0) return vec4(0.0);
+                float progress = niri_clamped_progress;
+                vec2 uv = coords_geo.xy;
+                float scale = 0.8 + 0.2 * progress;
+                vec2 centered = (uv - 0.5) / scale + 0.5;
+                if (centered.x < 0.0 || centered.x > 1.0 || centered.y < 0.0 || centered.y > 1.0) return vec4(0.0);
+                vec3 coords_tex = niri_geo_to_tex * vec3(centered, 1.0);
+                vec4 color = texture2D(niri_tex, coords_tex.st);
+                return vec4(color.rgb, color.a * progress);
+            }
+        "
+    }
+
+    window-close {
+        duration-ms 550
+        curve "linear"
+        custom-shader r"
+            float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+            float noise(vec2 p) {
+                vec2 i = floor(p); vec2 f = fract(p);
+                f = f * f * (3.0 - 2.0 * f);
+                return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x),
+                           mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
+            }
+            float fbm(vec2 p) {
+                float f = 0.0;
+                f += 0.5 * noise(p); p *= 2.1;
+                f += 0.25 * noise(p); p *= 2.2;
+                f += 0.125 * noise(p); p *= 2.3;
+                f += 0.0625 * noise(p);
+                return f;
+            }
+            vec4 close_color(vec3 coords_geo, vec3 size_geo) {
+                float progress = niri_clamped_progress;
+                vec2 uv = coords_geo.xy;
+                vec2 center = vec2(0.5, 0.5);
+                vec2 dir = uv - center;
+                float dist = length(dir);
+                float angle = atan(dir.y, dir.x);
+
+                // Quick expansion
+                float expand = pow(progress, 0.5) * 1.5;
+
+                // ASYMMETRIC SHAPE - varying lobes and angles
+                float lobe1 = 0.3 * sin(angle * 2.0 + niri_random_seed * 6.28);
+                float lobe2 = 0.2 * sin(angle * 3.0 + niri_random_seed * 3.14 + 1.0);
+                float lobe3 = 0.15 * sin(angle * 5.0 + niri_random_seed * 4.0);
+                float asymmetry = 1.0 + lobe1 + lobe2 + lobe3;
+
+                // Noise on top
+                float turb = fbm(vec2(angle * 2.0 + niri_random_seed * 10.0, progress * 3.0)) * 0.35;
+                float fire_edge = expand * asymmetry * (0.75 + turb);
+
+                // Colors - classic C&C palette
+                vec3 white_hot = vec3(1.0, 1.0, 0.85);
+                vec3 yellow = vec3(1.0, 0.85, 0.2);
+                vec3 orange = vec3(1.0, 0.55, 0.1);
+                vec3 dark_orange = vec3(0.85, 0.35, 0.05);
+                vec3 red_brown = vec3(0.5, 0.15, 0.05);
+                vec3 grey_smoke = vec3(0.65, 0.62, 0.58);
+
+                // Fire layers with chunkyness
+                float fire_turb = fbm((uv - center) * 8.0 - progress * 3.0 + niri_random_seed * 5.0);
+                float fire_turb2 = fbm((uv - center) * 12.0 + progress * 2.0 + niri_random_seed * 8.0);
+
+                // Asymmetric core of animation, off-centered
+                vec2 core_offset = vec2(
+                    0.03 * sin(niri_random_seed * 5.0),
+                    0.03 * cos(niri_random_seed * 7.0)
+                );
+                float core_dist = length(uv - center - core_offset);
+
+                // Core glow
+                float core = smoothstep(fire_edge * 0.3, 0.0, core_dist);
+                // Inner yellow
+                float inner = smoothstep(fire_edge * 0.45, fire_edge * 0.15, dist);
+                // Orange body
+                float mid = smoothstep(fire_edge * 0.7, fire_edge * 0.3, dist);
+                // Outer burn
+                float outer = smoothstep(fire_edge, fire_edge * 0.5, dist);
+
+                // Dark patches in fire (for the chunky look)
+                float dark_patches = fire_turb * fire_turb2;
+                dark_patches = smoothstep(0.12, 0.35, dark_patches) * mid * (1.0 - core);
+
+                // Fire color
+                vec3 fire = red_brown;
+                fire = mix(fire, dark_orange, outer);
+                fire = mix(fire, orange, mid * (1.0 - dark_patches * 0.7));
+                fire = mix(fire, yellow, inner);
+                fire = mix(fire, white_hot, core);
+
+                // Add dark turbulent patches
+                fire = mix(fire, red_brown, dark_patches * 0.65);
+
+                // Smoke ring - also asymmetric
+                float smoke_edge = fire_edge * (1.0 + 0.2 * sin(angle * 4.0 + niri_random_seed));
+                float smoke_ring = smoothstep(smoke_edge * 0.8, smoke_edge * 1.2, dist);
+                smoke_ring *= smoothstep(smoke_edge * 1.7, smoke_edge * 1.1, dist);
+                float smoke_turb = fbm((uv - center) * 4.0 + niri_random_seed * 3.0);
+                smoke_ring *= (0.4 + smoke_turb * 0.6) * 0.6;
+
+                // Debris particles
+                float debris = 0.0;
+                for (float i = 0.0; i < 30.0; i++) {
+                    float a = hash(vec2(i, niri_random_seed)) * 6.28;
+                    float spd = 0.3 + hash(vec2(i * 2.0, niri_random_seed)) * 0.7;
+                    float dly = hash(vec2(i * 3.0, niri_random_seed)) * 0.15;
+                    float t = clamp((progress - dly) / (1.0 - dly), 0.0, 1.0);
+                    vec2 pos = center + vec2(cos(a), sin(a)) * t * spd * expand;
+                    float d = length(uv - pos);
+                    float size = 0.006 + hash(vec2(i * 4.0, niri_random_seed)) * 0.01;
+                    debris += smoothstep(size, 0.0, d) * (1.0 - t * t);
+                }
+
+                // Timing - quick flash, sustain, fades out completely
+                float flash = smoothstep(0.0, 0.12, progress);
+                float fadeout = pow(smoothstep(1.0, 0.2, progress), 2.0);
+
+                // Fade to nothing
+                float fire_a = max(max(core, inner), max(mid, outer)) * flash * fadeout;
+
+                // Combine
+                vec3 result = fire;
+                result = mix(result, grey_smoke, smoke_ring * fadeout);
+                result += vec3(1.0, 0.7, 0.2) * debris * fadeout;
+
+                // Window gone immediately (couldn't figure this out for a while)
+                vec3 coords_tex = niri_geo_to_tex * vec3(uv, 1.0);
+                vec4 win = vec4(0.0);
+                if (uv.x >= 0.0 && uv.x <= 1.0 && uv.y >= 0.0 && uv.y <= 1.0) {
+                    win = texture2D(niri_tex, coords_tex.st);
+                }
+                float win_fade = 1.0 - smoothstep(0.0, 0.03, progress);
+                win.a *= win_fade;
+
+                // Everything fades out by end
+                float explosion_a = max(fire_a, smoke_ring * fadeout * 0.7);
+                float total_a = max(win.a, explosion_a);
+                float blend = clamp(fire_a + smoke_ring * 0.4 + smoothstep(0.0, 0.05, progress), 0.0, 1.0);
+                vec3 final_color = mix(win.rgb, result, blend);
+
+                return vec4(final_color, total_a * fadeout);
+            }
+        "
+    }
+}

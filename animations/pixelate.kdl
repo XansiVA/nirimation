@@ -4,7 +4,7 @@ animations {
     curve "ease-out-cubic"
   }
   window-open {
-    duration-ms 400
+    duration-ms 700
     curve "linear"
     custom-shader r"
       vec4 pixelate_open(vec3 coords_geo, vec3 size_geo) {
@@ -39,7 +39,7 @@ animations {
     "
   }
   window-close {
-    duration-ms 400
+    duration-ms 700
     curve "linear"
     custom-shader r"
       vec4 pixelate_close(vec3 coords_geo, vec3 size_geo) {

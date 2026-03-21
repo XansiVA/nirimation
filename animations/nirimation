@@ -1,0 +1,138 @@
+#!/usr/bin/env bash
+# nirimation - Simple animation switcher for Niri
+# Usage: nirimation [animation-name|list|current|help]
+
+ANIM_DIR="$(dirname "$(realpath "$0")")"
+NIRI_CONFIG="$HOME/.config/niri/config.kdl"
+
+show_help() {
+    echo "nirimation - animation swapper for Niri"
+    echo ""
+    echo "Usage: nirimation [command|animation-name]"
+    echo ""
+    echo "Commands:"
+    echo "  list             List available animations"
+    echo "  current          Show currently active animation"
+    echo "  -h, --help       Show this help message"
+    echo "  <name>           Switch to the named animation"
+    echo "  none             Disable animations (comments out include)"
+    echo ""
+    echo "With no arguments, shows the current animation."
+    echo ""
+    echo "Setup:"
+    echo "  On first run, nirimation will automatically comment out any"
+    echo "  existing 'animations { }' block in your niri config and add"
+    echo "  an include line. A backup is saved as config.kdl.bak."
+}
+
+list_animations() {
+    echo "Available animations:"
+    for f in "$ANIM_DIR"/*.kdl; do
+        name=$(basename "$f" .kdl)
+        if grep -q "include.*$name.kdl" "$NIRI_CONFIG" 2>/dev/null; then
+            echo "  * $name (active)"
+        else
+            echo "    $name"
+        fi
+    done
+}
+
+show_current() {
+    current=$(grep -oP 'include.*?/\K[^/]+\.kdl' "$NIRI_CONFIG" 2>/dev/null | sed 's/.kdl//')
+    if [ -n "$current" ]; then
+        echo "Current: $current"
+    else
+        echo "No animation include found in niri config"
+        echo "Run 'nirimation <name>' to set one (see 'nirimation list')"
+    fi
+}
+
+switch_animation() {
+    local name="$1"
+    local kdl_file="$ANIM_DIR/$name.kdl"
+
+    if [ ! -f "$kdl_file" ]; then
+        echo "Error: Animation '$name' not found"
+        echo "Run 'nirimation list' to see available animations"
+        exit 1
+    fi
+
+    if ! [ -f "$NIRI_CONFIG" ]; then
+        echo "Error: Niri config not found at $NIRI_CONFIG"
+        exit 1
+    fi
+
+    # Check if an include line exists (active or commented out)
+    if grep -qP '//\s*include\s+".*\.kdl"' "$NIRI_CONFIG"; then
+        # Uncomment and replace
+        sed -i -E "s|//\s*include \".*\.kdl\"|include \"$kdl_file\"|" "$NIRI_CONFIG"
+    elif grep -qP 'include\s+".*\.kdl"' "$NIRI_CONFIG"; then
+        # Replace existing include line
+        sed -i -E "s|include \".*\.kdl\"|include \"$kdl_file\"|" "$NIRI_CONFIG"
+    else
+        # First time setup — back up config, comment out animations block, add include
+        cp "$NIRI_CONFIG" "$NIRI_CONFIG.bak"
+
+        # Comment out existing animations { } block if present
+        if grep -qP '^\s*animations\s*\{' "$NIRI_CONFIG"; then
+            awk '
+                /^\s*animations\s*\{/ && !inside { inside=1; depth=0 }
+                inside {
+                    depth += gsub(/{/, "{")
+                    print "// " $0
+                    depth -= gsub(/}/, "}")
+                    if (depth <= 0) inside=0
+                    next
+                }
+                { print }
+            ' "$NIRI_CONFIG.bak" > "$NIRI_CONFIG"
+            echo "Commented out existing animations block in niri config"
+        fi
+
+        echo "" >> "$NIRI_CONFIG"
+        echo "include \"$kdl_file\"" >> "$NIRI_CONFIG"
+        echo "Backup saved to $NIRI_CONFIG.bak"
+    fi
+
+    # Reload niri
+    niri msg action load-config-file
+    echo "Switched to: $name"
+
+    # Apply config.toml parameters to the KDL file
+    if [ -f "$ANIM_DIR/.venv/bin/python3" ]; then
+        "$ANIM_DIR/.venv/bin/python3" "$ANIM_DIR/nirimation-apply" "$name" 2>/dev/null
+    else
+        "$ANIM_DIR/nirimation-apply" "$name" 2>/dev/null
+    fi
+}
+
+case "${1:-}" in
+    -h|--help|help)
+        show_help
+        ;;
+    list)
+        list_animations
+        ;;
+    current)
+        show_current
+        ;;
+    "")
+        show_current
+        ;;
+    none|off)
+        if ! [ -f "$NIRI_CONFIG" ]; then
+            echo "Error: Niri config not found at $NIRI_CONFIG"
+            exit 1
+        fi
+        if grep -qP '^\s*include\s+".*\.kdl"' "$NIRI_CONFIG"; then
+            sed -i -E 's|^(\s*)(include ".*\.kdl")|\1// \2|' "$NIRI_CONFIG"
+            niri msg action load-config-file
+            echo "Animations disabled"
+        else
+            echo "No active animation include found"
+        fi
+        ;;
+    *)
+        switch_animation "$1"
+        ;;
+esac

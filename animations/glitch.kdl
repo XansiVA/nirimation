@@ -4,11 +4,11 @@
 // Adjustable parameters:
 // - split (0.04): RGB split intensity - higher = more separation
 // - scanline (0.08): Scanline visibility - higher = more prominent
-// - uv.y * 400.0: Scanline density - higher = more lines
+// - uv.y * 450.0: Scanline density - higher = more lines
 
 animations {
     window-open {
-        duration-ms 400
+        duration-ms 700
         curve "linear"
         custom-shader r"
             vec4 open_color(vec3 coords_geo, vec3 size_geo) {
@@ -30,7 +30,7 @@ animations {
                 vec3 color = vec3(r, g, b);
 
                 // CRT scanline effect
-                float scanline = 1.0 - 0.08 + 0.08 * sin(uv.y * 400.0);
+                float scanline = 1.0 - 0.12 + 0.12 * sin(uv.y * 450.0);
 
                 return vec4(color * scanline, a * progress);
             }
@@ -38,7 +38,7 @@ animations {
     }
 
     window-close {
-        duration-ms 600
+        duration-ms 1000
         curve "linear"
         custom-shader r"
             vec4 close_color(vec3 coords_geo, vec3 size_geo) {
@@ -59,7 +59,7 @@ animations {
                 vec3 color = vec3(r, g, b);
 
                 // CRT scanline effect
-                float scanline = 1.0 - 0.08 + 0.08 * sin(uv.y * 400.0);
+                float scanline = 1.0 - 0.12 + 0.12 * sin(uv.y * 450.0);
 
                 return vec4(color * scanline, a * (1.0 - progress));
             }
