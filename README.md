@@ -21,11 +21,19 @@ https://github.com/user-attachments/assets/4ad228f2-ed69-40dc-8ab3-287480fa4427
 
 https://github.com/user-attachments/assets/a62bb9d3-9fe3-4a35-9c87-d9af3f45c999
 
-https://github.com/user-attachments/assets/burn.mp4
+https://github.com/user-attachments/assets/0e3e31c5-d14d-463c-a0a5-f1595a83658f
 
-https://github.com/user-attachments/assets/burn-ashes.mp4
+https://github.com/user-attachments/assets/2fa9dd95-5988-48a3-8ec7-a72e72b74be5
 
-https://github.com/user-attachments/assets/glitch.mp4
+https://github.com/user-attachments/assets/0f4a8d7b-211a-4711-b184-8faadb9d32ff
+
+https://github.com/user-attachments/assets/7fac12ba-47f9-4aab-8827-c81bac32e7fc
+
+https://github.com/user-attachments/assets/501297a7-085a-4dcc-bf53-11acb6edee43
+
+https://github.com/user-attachments/assets/fe469e11-6df0-4437-9597-28c9a7e1b2d7
+
+https://github.com/user-attachments/assets/73ab4218-a1dd-434a-ae57-3ca8d237664e
 
 </details>
 
