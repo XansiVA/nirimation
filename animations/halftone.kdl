@@ -1,0 +1,67 @@
+// Traditional burn appearance, orange glowy look
+animations {
+    workspace-switch {
+        duration-ms 300
+        curve "ease-out-cubic"
+    }
+
+    window-open {
+        duration-ms 500
+        curve "linear"
+        custom-shader r"
+        vec4 open_color(vec3 coords_geo, vec3 size_geo) {
+            vec3 coords_tex = niri_geo_to_tex * coords_geo;
+            vec4 color = texture2D(niri_tex, coords_tex.st);
+            float cellSize = 35.0;
+
+            float p = niri_clamped_progress * (1.0 + cellSize * 0.015);
+            vec2 coords = (coords_geo.xy - vec2(0.5, 0.5)) * size_geo.xy / size_geo.x;
+            coords*= cellSize;
+            coords.x += ceil(coords.y) * .5;
+            vec2 cell = floor(-coords);
+            coords = fract(coords);
+
+            vec2 center = vec2(0.5);
+            float offset = cell.y ;
+            float d = distance(coords, center);
+            float r = p + offset / cellSize;
+            if (r < 0.25) {
+             r = 0.0;
+            }
+            d = smoothstep(r-0.01, r+0.01, d);
+            vec4 col = mix(color, vec4(0), d);
+            return col;
+        }
+        "
+    }
+
+    window-close {
+        duration-ms 500
+        curve "linear"
+        custom-shader r"
+        vec4 close_color(vec3 coords_geo, vec3 size_geo) {
+            vec3 coords_tex = niri_geo_to_tex * coords_geo;
+            vec4 color = texture2D(niri_tex, coords_tex.st);
+            float cellSize = 35.0;
+
+            float p = niri_clamped_progress * (1.0 + cellSize * 0.015);
+            vec2 coords = (coords_geo.xy - vec2(0.0, 0.5)) * size_geo.xy / size_geo.x;
+            coords*= cellSize;
+            coords.x += ceil(coords.y) * .5;
+            vec2 cell = floor(-coords);
+            coords = fract(coords);
+
+            vec2 center = vec2(0.5);
+            float offset = cell.y ;
+            float d = distance(coords, center);
+            float r = 1.0 - p + offset / cellSize;
+            if (r < 0.25) {
+             r = 0.0;
+            }
+            d = smoothstep(r-0.01, r+0.01, d);
+            vec4 col = mix(color, vec4(0), d);
+            return col;
+        }
+        "
+    }
+}
