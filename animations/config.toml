@@ -1,0 +1,157 @@
+# Nirimation Configuration
+# Edit values here, then run: ./nirimation-apply
+#
+# Inspired by XansiVA/nirimation - using Niri's include system for modularity
+
+[animation]
+# Which animation module to use
+# Options: glitch, glitch-cyberpunk, burn, burn-ashes, burn-multicolor, bloom,
+#          pixelate, fold-window, pop-drop, ribbons, roll-drop, swipe-window, unravel
+active = "glitch-cyberpunk"
+
+# Path to your niri config (usually doesn't need changing)
+niri_config = "~/.config/niri/config.kdl"
+
+# ============================================
+# GLITCH SHADER SETTINGS
+# ============================================
+[glitch]
+open_duration_ms = 700
+close_duration_ms = 1000
+rgb_split = 0.04              # chromatic aberration intensity (0.02-0.08)
+scanline_strength = 0.12      # scanline visibility (0.05-0.15)
+scanline_density = 450.0      # number of scanlines (200-600)
+
+# ============================================
+# GLITCH CYBERPUNK SHADER SETTINGS
+# ============================================
+[glitch-cyberpunk]
+open_duration_ms = 500
+close_duration_ms = 700
+rgb_split = 0.06              # aggressive red-shifted split
+scanline_strength = 0.12      # CRT scanlines
+scanline_density = 450.0      # scanline count
+noise_intensity = 0.15        # static noise overlay
+tint_strength = 0.4           # red/magenta tint intensity
+glow_intensity = 0.6          # neon edge glow
+
+# ============================================
+# BURN SHADER SETTINGS
+# ============================================
+[burn]
+open_duration_ms = 700
+close_duration_ms = 700
+edge_roughness = 8.0          # higher = finer burn edge pattern
+glow_width = 0.08             # width of ember glow line
+burn_reach = 0.8              # how far burn extends (0.0-1.0)
+
+# ============================================
+# BURN-ASHES SHADER SETTINGS
+# ============================================
+[burn-ashes]
+open_duration_ms = 700
+close_duration_ms = 700
+edge_roughness = 8.0
+glow_width = 0.08
+burn_reach = 0.8
+# Particle settings
+ash_size = 150                # higher = smaller particles
+ash_layers = 7                # more layers = more particles
+ember_size = 280              # higher = smaller sparks
+ember_layers = 8              # more layers = more sparks
+
+[burn-ashes.colors]
+# Ember colors (randomly selected per window)
+orange = true
+blue = false
+purple = false
+green = false
+pink = false
+cyan = true
+gold = false
+red = true
+
+# ============================================
+# BLOOM SHADER SETTINGS
+# ============================================
+[bloom]
+open_duration_ms = 700
+close_duration_ms = 700
+
+# ============================================
+# PIXELATE SHADER SETTINGS
+# ============================================
+[pixelate]
+open_duration_ms = 700
+close_duration_ms = 700
+pixel_size = 40.0             # size of pixels during effect
+
+# ============================================
+# BURN-MULTICOLOR SHADER SETTINGS
+# ============================================
+[burn-multicolor]
+open_duration_ms = 700
+close_duration_ms = 1200
+edge_roughness = 9.0
+glow_width = 0.08
+burn_reach = 0.8
+
+[burn-multicolor.colors]
+# Ember colors (randomly selected per window)
+orange = true
+blue = true
+purple = true
+green = true
+pink = true
+cyan = true
+gold = true
+red = true
+
+# ============================================
+# FOLD-WINDOW SHADER SETTINGS
+# ============================================
+[fold-window]
+open_duration_ms = 900
+close_duration_ms = 700
+perspective = 600.0           # 3D perspective depth (400-800)
+
+# ============================================
+# POP-DROP SHADER SETTINGS
+# ============================================
+[pop-drop]
+open_duration_ms = 700
+close_duration_ms = 700
+fall_distance = 1440.0        # how far window falls (pixels)
+max_rotation = 0.5            # max rotation angle (radians)
+
+# ============================================
+# RIBBONS SHADER SETTINGS
+# ============================================
+[ribbons]
+open_duration_ms = 700
+close_duration_ms = 700
+ribbon_count = 30           # number of ribbon strips (10-30)
+
+# ============================================
+# ROLL-DROP SHADER SETTINGS
+# ============================================
+[roll-drop]
+open_duration_ms = 700
+close_duration_ms = 700
+fall_distance = 1440.0
+max_rotation = 0.5
+
+# ============================================
+# SWIPE-WINDOW SHADER SETTINGS
+# ============================================
+[swipe-window]
+open_duration_ms = 700
+close_duration_ms = 700
+
+# ============================================
+# UNRAVEL SHADER SETTINGS
+# ============================================
+[unravel]
+open_duration_ms = 700
+close_duration_ms = 700
+edge_thickness = 3.0          # thickness of expanding edge line (1-5)

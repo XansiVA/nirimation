@@ -8,7 +8,7 @@ animations {
     }
 
     window-open {
-      duration-ms 175
+      duration-ms 700
       curve "ease-out-quad"
       custom-shader r"
         vec4 zoom_in(vec3 coords_geo, vec3 size_geo) {
@@ -31,7 +31,7 @@ animations {
 
     // Original by Lemmy: https://github.com/ItsLemmy
     window-close {
-      duration-ms 200
+      duration-ms 700
       curve "linear"
       custom-shader r"
         vec4 fall_and_rotate(vec3 coords_geo, vec3 size_geo) {

@@ -1,14 +1,18 @@
-//This was a nightmare to make but here
+// This was a nightmare to make but here
 // original code from; https://github.com/XansiVA
+// Fixed: use raw strings (r"...") for GLSL shaders to match all other
+// animations, and replaced ternary int-to-float cast with mix/step to
+// avoid "implicit cast from int to float" (GL error C7011) on strict
+// GLSL drivers, which caused the shader to silently fail to compile.
 
 animations {
     workspace-switch {
         spring damping-ratio=0.80 stiffness=523 epsilon=0.0001
     }
 window-open {
-    duration-ms 600
+    duration-ms 700
     curve "ease-out-quad"
-    custom-shader "
+    custom-shader r"
     vec4 open_color(vec3 coords_geo, vec3 size_geo) {
         float progress = niri_clamped_progress;
         
@@ -28,11 +32,12 @@ window-open {
         float y_pos = rotated.y + 0.5;
         
         // Equal-sized ribbons (20 total)
-        float ribbon_count = 20.0;
+        float ribbon_count = 30.0;
         float ribbon_index = floor(y_pos * ribbon_count);
         
         // Alternating pattern: even = left, odd = right
-        float direction = mod(ribbon_index, 2.0) == 0.0 ? -1.0 : 1.0;
+        float is_even = step(mod(ribbon_index, 2.0), 0.5);
+        float direction = is_even * -2.0 + 1.0;
         
         // Cascading delay
         float delay = ribbon_index / ribbon_count * 0.5;
@@ -63,9 +68,9 @@ window-open {
 
     
 window-close {
-    duration-ms 800
+    duration-ms 700
     curve "ease-out-quad"
-    custom-shader "
+    custom-shader r"
     vec4 close_color(vec3 coords_geo, vec3 size_geo) {
         float progress = niri_clamped_progress;
         
@@ -85,11 +90,12 @@ window-close {
         float y_pos = rotated.y + 0.5;
         
         // Equal-sized ribbons (20 total)
-        float ribbon_count = 20.0;
+        float ribbon_count = 30.0;
         float ribbon_index = floor(y_pos * ribbon_count);
         
         // Alternating pattern: even = left, odd = right
-        float direction = mod(ribbon_index, 2.0) == 0.0 ? -1.0 : 1.0;
+        float is_even = step(mod(ribbon_index, 2.0), 0.5);
+        float direction = is_even * -2.0 + 1.0;
         
         // Cascading delay
         float delay = ribbon_index / ribbon_count * 0.5;

@@ -4,7 +4,7 @@ animations {
     }
 
      window-open {
-        duration-ms 400
+        duration-ms 900
         curve "ease-out-expo"
         custom-shader r"
         vec4 door_rise(vec3 coords_geo, vec3 size_geo) {
@@ -54,7 +54,7 @@ animations {
     }
     
    window-close {
-    duration-ms 400
+    duration-ms 700
     curve "ease-out-expo"
     custom-shader r"
     vec4 bob_and_slide(vec3 coords_geo, vec3 size_geo) {

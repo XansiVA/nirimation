@@ -9,7 +9,7 @@ animations {
     }
 
     window-open {
-        duration-ms 500
+        duration-ms 700
         curve "linear"
         custom-shader r"
             float hash(vec2 p) {
@@ -60,7 +60,7 @@ animations {
                 vec4 color = texture2D(niri_tex, coords_tex.st);
 
                 float edge_dist = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
-                float n = noise(uv * 8.0 + niri_random_seed * 100.0) * 0.3;
+                float n = noise(uv * 9.0 + niri_random_seed * 100.0) * 0.3;
                 float burn_line = edge_dist + n;
                 float threshold = progress * 0.8;
 
@@ -83,7 +83,7 @@ animations {
     }
 
     window-close {
-        duration-ms 500
+        duration-ms 1200
         curve "linear"
         custom-shader r"
             float hash(vec2 p) {
@@ -134,7 +134,7 @@ animations {
                 vec4 color = texture2D(niri_tex, coords_tex.st);
 
                 float edge_dist = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
-                float n = noise(uv * 8.0 + niri_random_seed * 100.0) * 0.3;
+                float n = noise(uv * 9.0 + niri_random_seed * 100.0) * 0.3;
                 float burn_line = edge_dist + n;
                 float threshold = progress * 0.8;
 

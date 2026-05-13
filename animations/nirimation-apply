@@ -1,0 +1,233 @@
+#!/usr/bin/env python3
+"""
+nirimation-apply - Apply config.toml parameter values to animation KDL files
+
+Usage:
+  nirimation-apply              Apply params for the active animation
+  nirimation-apply <animation>  Set active animation and apply its params
+  nirimation-apply list         List available animations
+  nirimation-apply current      Show active animation from config.toml
+
+This tool tunes shader parameters (durations, colors, intensities) by
+writing config.toml values into the KDL files. Use the 'nirimation' bash
+script to switch which animation is active in niri's config.
+"""
+
+import argparse
+import os
+import re
+import sys
+import tomllib
+from pathlib import Path
+
+SCRIPT_DIR = Path(os.path.realpath(__file__)).parent
+CONFIG_FILE = SCRIPT_DIR / "config.toml"
+
+# Parameter patterns: maps (animation_names, param_name) to (regex, replacement)
+# Use {val} as placeholder for the config value
+PARAM_PATTERNS = {
+    # Common to all animations
+    "*": {
+        "open_duration_ms":  (r'(window-open\s*\{\s*\n\s*duration-ms\s+)\d+',
+                              r'\g<1>{val}'),
+        "close_duration_ms": (r'(window-close\s*\{\s*\n\s*duration-ms\s+)\d+',
+                              r'\g<1>{val}'),
+    },
+    # Glitch variants
+    ("glitch", "glitch-cyberpunk"): {
+        "rgb_split":          (r'(\* )([\d.]+)(;.*split)',
+                               r'\g<1>{val}\3'),
+        "scanline_strength":  (r'1\.0 - ([\d.]+) \+ ([\d.]+) \* sin',
+                               r'1.0 - {val} + {val} * sin'),
+        "scanline_density":   (r'(uv\.y \* )([\d.]+)',
+                               r'\g<1>{val}'),
+    },
+    # Glitch-cyberpunk extras
+    ("glitch-cyberpunk",): {
+        "noise_intensity":    (r'(noise_intensity\s*=\s*)([\d.]+)',
+                               r'\g<1>{val}'),
+        "tint_strength":      (r'(tint_strength\s*=\s*)([\d.]+)',
+                               r'\g<1>{val}'),
+        "glow_intensity":     (r'(glow_intensity\s*=\s*)([\d.]+)',
+                               r'\g<1>{val}'),
+    },
+    # Burn family
+    ("burn", "burn-ashes", "burn-multicolor"): {
+        "edge_roughness":     (r'(uv \* )([\d.]+)( \+.*random_seed)',
+                               r'\g<1>{val}\3'),
+        "glow_width":         (r'(threshold [+-] )([\d.]+)',
+                               r'\g<1>{val}'),
+        "burn_reach":         (r'(progress \* )([\d.]+)(;.*threshold)',
+                               r'\g<1>{val}\3'),
+    },
+    # Burn-ashes particles
+    ("burn-ashes",): {
+        "ash_size":           (r'(ash_size\s*=\s*)([\d.]+)',
+                               r'\g<1>{val}'),
+        "ash_layers":         (r'(ash_layers\s*=\s*)([\d.]+)',
+                               r'\g<1>{val}'),
+        "ember_size":         (r'(ember_size\s*=\s*)([\d.]+)',
+                               r'\g<1>{val}'),
+        "ember_layers":       (r'(ember_layers\s*=\s*)([\d.]+)',
+                               r'\g<1>{val}'),
+    },
+    ("pixelate",): {
+        "pixel_size":         (r'(pixel_size = )([\d.]+)',
+                               r'\g<1>{val}'),
+    },
+    ("fold-window",): {
+        "perspective":        (r'(float perspective = )([\d.]+)',
+                               r'\g<1>{val}'),
+    },
+    ("pop-drop", "roll-drop"): {
+        "fall_distance":      (r'(float fall_distance = )([\d.]+)',
+                               r'\g<1>{val}'),
+        "max_rotation":       (r'(float max_angle = )([\d.]+)',
+                               r'\g<1>{val}'),
+    },
+    ("ribbons",): {
+        "ribbon_count":       (r'(float ribbon_count = )([\d.]+)',
+                               r'\g<1>{val}'),
+    },
+    ("unravel",): {
+        "edge_thickness":     (r'(float edge_thickness = )([\d.]+)',
+                               r'\g<1>{val}'),
+    },
+}
+
+
+def load_config():
+    with open(CONFIG_FILE, "rb") as f:
+        return tomllib.load(f)
+
+
+def save_config_active(animation_name):
+    content = CONFIG_FILE.read_text()
+    new_content = re.sub(
+        r'^(active\s*=\s*)"[^"]*"',
+        f'\\1"{animation_name}"',
+        content,
+        flags=re.MULTILINE,
+    )
+    CONFIG_FILE.write_text(new_content)
+
+
+def get_available_animations():
+    return sorted(f.stem for f in SCRIPT_DIR.glob("*.kdl"))
+
+
+def get_patterns_for(animation_name):
+    """Collect all matching param patterns for an animation."""
+    patterns = {}
+    for key, params in PARAM_PATTERNS.items():
+        if key == "*" or (isinstance(key, str) and key == animation_name) or \
+           (isinstance(key, tuple) and animation_name in key):
+            patterns.update(params)
+    return patterns
+
+
+def apply_params(animation_name, config_params):
+    """Apply config.toml parameter values to the animation's KDL file."""
+    kdl_path = SCRIPT_DIR / f"{animation_name}.kdl"
+    if not kdl_path.exists():
+        print(f"Error: {kdl_path} not found")
+        return False
+
+    content = kdl_path.read_text()
+    original = content
+    changes = []
+
+    patterns = get_patterns_for(animation_name)
+
+    for param_name, (pattern, replacement) in patterns.items():
+        if param_name in config_params:
+            val = config_params[param_name]
+            repl = replacement.replace("{val}", str(val))
+            content, n = re.subn(pattern, repl, content)
+            if n > 0:
+                changes.append(f"{param_name} = {val}")
+
+    if content != original:
+        kdl_path.write_text(content)
+        if changes:
+            print("Parameters applied:")
+            for change in changes:
+                print(f"  {change}")
+        return True
+
+    print("No parameters changed")
+    return False
+
+
+def cmd_list():
+    animations = get_available_animations()
+    config = load_config()
+    current = config["animation"]["active"]
+    print("Available animations:")
+    for anim in animations:
+        marker = " *" if anim == current else ""
+        print(f"  {anim}{marker}")
+    print("\n  (* = active in config.toml)")
+
+
+def cmd_current():
+    config = load_config()
+    print(config["animation"]["active"])
+
+
+def cmd_apply(animation_name=None):
+    config = load_config()
+
+    if animation_name:
+        available = get_available_animations()
+        if animation_name not in available:
+            print(f"Error: Unknown animation '{animation_name}'")
+            print(f"Available: {', '.join(available)}")
+            sys.exit(1)
+        save_config_active(animation_name)
+        config = load_config()
+
+    animation_name = config["animation"]["active"]
+    anim_params = config.get(animation_name, {})
+
+    if not anim_params:
+        print(f"No parameters found for '{animation_name}' in config.toml")
+        return
+
+    apply_params(animation_name, anim_params)
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Apply config.toml parameter values to animation KDL files",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""\
+Examples:
+  nirimation-apply              Apply params for current animation
+  nirimation-apply glitch       Set active to glitch and apply its params
+  nirimation-apply list         List available animations
+  nirimation-apply current      Show active animation
+
+Use 'nirimation' (bash) to switch animations in niri's config.""",
+    )
+    parser.add_argument(
+        "command",
+        nargs="?",
+        default="apply",
+        help="Animation name, 'list', or 'current'",
+    )
+
+    args = parser.parse_args()
+
+    if args.command == "list":
+        cmd_list()
+    elif args.command == "current":
+        cmd_current()
+    elif args.command == "apply":
+        cmd_apply()
+    else:
+        cmd_apply(args.command)
+
+
+if __name__ == "__main__":
+    main()

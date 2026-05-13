@@ -10,7 +10,7 @@
 
 animations {
     window-open {
-        duration-ms 400
+        duration-ms 700
         curve "linear"
         custom-shader r"
             float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
@@ -53,7 +53,7 @@ animations {
     }
 
     window-close {
-        duration-ms 600
+        duration-ms 700
         curve "linear"
         custom-shader r"
             float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
