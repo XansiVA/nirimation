@@ -1,0 +1,265 @@
+#!/usr/bin/env python3
+"""
+nirimation - Animation switcher for Niri
+
+Usage:
+  nirimation list               List available animations
+  nirimation -c                 Show currently active animation
+  nirimation apply <name>       Copy animation to ~/.config/niri/nirimation.kdl and reload niri
+"""
+
+import argparse
+import re
+import shutil
+import subprocess
+import sys
+import tomllib
+from pathlib import Path
+
+KDL_DIR      = Path("/usr/share/nirimation")
+CONFIG_DIR   = Path.home() / ".config" / "nirimation"
+CONFIG_FILE  = CONFIG_DIR / "config.toml"
+NIRI_DIR     = Path.home() / ".config" / "niri"
+NIRI_CONFIG  = NIRI_DIR / "config.kdl"
+ACTIVE_KDL   = NIRI_DIR / "nirimation.kdl"
+
+PARAM_PATTERNS = {
+    "*": {
+        "open_duration_ms":  (r'(window-open\s*\{\s*\n\s*duration-ms\s+)\d+',  r'\g<1>{val}'),
+        "close_duration_ms": (r'(window-close\s*\{\s*\n\s*duration-ms\s+)\d+', r'\g<1>{val}'),
+    },
+    ("glitch", "glitch-cyberpunk"): {
+        "rgb_split":         (r'(\* )([\d.]+)(;.*split)',                        r'\g<1>{val}\3'),
+        "scanline_strength": (r'1\.0 - ([\d.]+) \+ ([\d.]+) \* sin',            r'1.0 - {val} + {val} * sin'),
+        "scanline_density":  (r'(uv\.y \* )([\d.]+)',                            r'\g<1>{val}'),
+    },
+    ("glitch-cyberpunk",): {
+        "noise_intensity":   (r'(noise_intensity\s*=\s*)([\d.]+)',               r'\g<1>{val}'),
+        "tint_strength":     (r'(tint_strength\s*=\s*)([\d.]+)',                 r'\g<1>{val}'),
+        "glow_intensity":    (r'(glow_intensity\s*=\s*)([\d.]+)',                r'\g<1>{val}'),
+    },
+    ("burn", "burn-ashes", "burn-multicolor"): {
+        "edge_roughness":    (r'(uv \* )([\d.]+)( \+.*random_seed)',             r'\g<1>{val}\3'),
+        "glow_width":        (r'(threshold [+-] )([\d.]+)',                      r'\g<1>{val}'),
+        "burn_reach":        (r'(progress \* )([\d.]+)(;.*threshold)',           r'\g<1>{val}\3'),
+    },
+    ("burn-ashes",): {
+        "ash_size":          (r'(ash_size\s*=\s*)([\d.]+)',                      r'\g<1>{val}'),
+        "ash_layers":        (r'(ash_layers\s*=\s*)([\d.]+)',                    r'\g<1>{val}'),
+        "ember_size":        (r'(ember_size\s*=\s*)([\d.]+)',                    r'\g<1>{val}'),
+        "ember_layers":      (r'(ember_layers\s*=\s*)([\d.]+)',                  r'\g<1>{val}'),
+    },
+    ("pixelate",): {
+        "pixel_size":        (r'(pixel_size = )([\d.]+)',                        r'\g<1>{val}'),
+    },
+    ("fold-window",): {
+        "perspective":       (r'(float perspective = )([\d.]+)',                 r'\g<1>{val}'),
+    },
+    ("pop-drop", "roll-drop"): {
+        "fall_distance":     (r'(float fall_distance = )([\d.]+)',               r'\g<1>{val}'),
+        "max_rotation":      (r'(float max_angle = )([\d.]+)',                   r'\g<1>{val}'),
+    },
+    ("ribbons",): {
+        "ribbon_count":      (r'(float ribbon_count = )([\d.]+)',                r'\g<1>{val}'),
+    },
+    ("unravel",): {
+        "edge_thickness":    (r'(float edge_thickness = )([\d.]+)',              r'\g<1>{val}'),
+    },
+}
+
+
+# ---------------------------------------------------------------------------
+# Config helpers
+# ---------------------------------------------------------------------------
+
+def load_config() -> dict:
+    if not CONFIG_FILE.exists():
+        return {}
+    with open(CONFIG_FILE, "rb") as f:
+        return tomllib.load(f)
+
+
+def save_config_active(name: str):
+    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    if CONFIG_FILE.exists():
+        content = CONFIG_FILE.read_text()
+        if re.search(r'^\s*active\s*=', content, re.MULTILINE):
+            content = re.sub(
+                r'^(\s*active\s*=\s*)"[^"]*"',
+                f'\\1"{name}"',
+                content,
+                flags=re.MULTILINE,
+            )
+            CONFIG_FILE.write_text(content)
+            return
+    with open(CONFIG_FILE, "a") as f:
+        f.write(f'\n[animation]\nactive = "{name}"\n')
+
+
+def get_active_animation() -> str | None:
+    return load_config().get("animation", {}).get("active")
+
+
+# ---------------------------------------------------------------------------
+# KDL helpers
+# ---------------------------------------------------------------------------
+
+def get_available_animations() -> list[str]:
+    if not KDL_DIR.exists():
+        return []
+    return sorted(f.stem for f in KDL_DIR.glob("*.kdl"))
+
+
+def get_patterns_for(name: str) -> dict:
+    out = {}
+    for key, params in PARAM_PATTERNS.items():
+        if key == "*" \
+           or (isinstance(key, str) and key == name) \
+           or (isinstance(key, tuple) and name in key):
+            out.update(params)
+    return out
+
+
+def apply_params(name: str, params: dict):
+    """Apply config.toml params into the active ACTIVE_KDL file."""
+    content = original = ACTIVE_KDL.read_text()
+    changes = []
+
+    for pname, (pattern, repl) in get_patterns_for(name).items():
+        if pname in params:
+            val = params[pname]
+            content, n = re.subn(pattern, repl.replace("{val}", str(val)), content)
+            if n > 0:
+                changes.append(f"  {pname} = {val}")
+
+    if content != original:
+        ACTIVE_KDL.write_text(content)
+        print("Parameters applied:")
+        for c in changes:
+            print(c)
+    else:
+        print("No parameters changed.")
+
+
+def ensure_niri_include():
+    """
+    Make sure ~/.config/niri/config.kdl has an include for nirimation.kdl.
+    Only adds it once; never touches it again after that.
+    """
+    if not NIRI_CONFIG.exists():
+        print(f"Warning: niri config not found at {NIRI_CONFIG}, skipping include setup.")
+        return
+
+    content = NIRI_CONFIG.read_text()
+    include_line = f'include "{ACTIVE_KDL}"'
+
+    if str(ACTIVE_KDL) in content:
+        return  # already present (commented or not)
+
+    NIRI_CONFIG.write_text(content + f'\n{include_line}\n')
+    print(f"Added include to {NIRI_CONFIG}")
+
+
+def reload_niri():
+    result = subprocess.run(
+        ["niri", "msg", "action", "load-config-file"],
+        capture_output=True, text=True
+    )
+    if result.returncode != 0:
+        print(f"Warning: niri reload failed: {result.stderr.strip()}")
+
+
+# ---------------------------------------------------------------------------
+# Subcommands
+# ---------------------------------------------------------------------------
+
+def cmd_list():
+    available = get_available_animations()
+    active = get_active_animation()
+    if not available:
+        print(f"No animations found in {KDL_DIR}")
+        return
+    print("Available animations:")
+    for a in available:
+        marker = "*" if a == active else " "
+        print(f"  {marker} {a}")
+    if active:
+        print("\n  (* = active)")
+
+
+def cmd_current():
+    active = get_active_animation()
+    if active:
+        print(active)
+    else:
+        print("No active animation set.")
+
+
+def cmd_apply(name: str):
+    available = get_available_animations()
+    if name not in available:
+        print(f"Error: unknown animation '{name}'")
+        print(f"Available: {', '.join(available)}")
+        sys.exit(1)
+
+    # Copy chosen animation to ~/.config/niri/nirimation.kdl
+    src = KDL_DIR / f"{name}.kdl"
+    NIRI_DIR.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(src, ACTIVE_KDL)
+    print(f"Copied {src.name} -> {ACTIVE_KDL}")
+
+    # Apply any config.toml params on top
+    save_config_active(name)
+    cfg = load_config()
+    params = cfg.get(name, {})
+    if params:
+        apply_params(name, params)
+    else:
+        print(f"No parameters in {CONFIG_FILE} for '{name}' — using KDL as-is.")
+
+    # Ensure the include line exists in niri config (one-time setup)
+    ensure_niri_include()
+
+    reload_niri()
+    print(f"Switched to: {name}")
+
+
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
+
+def main():
+    parser = argparse.ArgumentParser(
+        prog="nirimation",
+        description="Animation switcher for Niri",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""\
+Examples:
+  nirimation list               List available animations
+  nirimation -c                 Show currently active animation
+  nirimation apply glitch       Switch to glitch, apply params, reload niri
+""",
+    )
+
+    parser.add_argument("-c", "--current", action="store_true",
+                        help="Show currently active animation")
+
+    sub = parser.add_subparsers(dest="command")
+    sub.add_parser("list", help="List available animations")
+    apply_p = sub.add_parser("apply", help="Switch to an animation and apply it")
+    apply_p.add_argument("name", help="Animation name")
+
+    args = parser.parse_args()
+
+    if args.current:
+        cmd_current()
+    elif args.command == "list":
+        cmd_list()
+    elif args.command == "apply":
+        cmd_apply(args.name)
+    else:
+        parser.print_help()
+
+
+if __name__ == "__main__":
+    main()
