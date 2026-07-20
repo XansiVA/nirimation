@@ -1,8 +1,10 @@
 # Nirimation
+
 A host for Niri Animations configurations to be shared using custom shaders built in with GLSL
 
 # Showcase
-## This was brought by Posty! Config written by XansiVA
+
+The following videos were recorded by ***Posty***, with configs by ***XansiVA***.
 
 https://github.com/user-attachments/assets/ab2b63ec-8040-456a-aa48-38993233b255
 
@@ -38,11 +40,11 @@ https://github.com/user-attachments/assets/73ab4218-a1dd-434a-ae57-3ca8d237664e
 </details>
 
 
-> **Notice**
-> We don't take animation configs that are not **Custom Shaders!**
-This means that they must be written in GLSL or any other graphics programming.
+> [!NOTE]
+> Animation configs must be written in [KDL](https://kdl.dev/) files, and their shaders must be written in GLSL
 
-# How to use these.
+# How to Use
+
 You need a basic knowledge of how config files work.
 Usually your niri config should be in `~/.config/niri/config.kdl`.
 Open it and scroll down until you see an `animations` line inside of it, you can copy and paste different configs into it.
@@ -51,7 +53,7 @@ We only add FULL animation blocks so delete your current animation block in the 
 You are allowed to ask for an animation, contribute, and copy any of them all you like.
 Enjoy them!
 
+# Current Issues
 
-# Current Issues;
 Unravel seems to have a error or non alignment where it does not draw the line based on how long the window is infact it just draws it to the screen width.
 Here are the some videos for reference.
