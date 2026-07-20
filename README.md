@@ -4,7 +4,7 @@ A host for Niri Animations configurations to be shared using custom shaders buil
 
 # Showcase
 
-The following videos were recorded by ***Posty***, with configs by ***XansiVA***.
+The following videos were recorded by ***Posty***, with configs by ***Xansidev***.
 
 https://github.com/user-attachments/assets/ab2b63ec-8040-456a-aa48-38993233b255
 
@@ -56,4 +56,3 @@ Enjoy them!
 # Current Issues
 
 Unravel seems to have a error or non alignment where it does not draw the line based on how long the window is infact it just draws it to the screen width.
-Here are the some videos for reference.
